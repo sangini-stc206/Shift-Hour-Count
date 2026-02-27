@@ -18,7 +18,9 @@ import DateTimePicker, {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function parseTimeToSeconds(value: string): number | null {
-  const trimmed = value.trim();
+  let trimmed = value.trim();
+  // Strip optional leading IN/OUT label like "IN - 9:51" or "OUT: 10:00"
+  trimmed = trimmed.replace(/^(IN|OUT)\s*[:\-]?\s*/i, '');
   if (!trimmed) return null;
   const match =
     trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i) ||
@@ -376,15 +378,46 @@ function ShiftCalculator({isDark, onToggleTheme}: {isDark: boolean; onToggleThem
 
       {/* ── Mode Toggle ── */}
       <View style={{flexDirection: 'row', backgroundColor: T.surface, borderRadius: 10, borderWidth: 1, borderColor: T.border, padding: 4, gap: 4}}>
-        {(['paste', 'manual'] as const).map(m => {
-          const active = entryMode === m;
+        {(['paste', 'manual'] as const).map(mode => {
+          const active = entryMode === mode;
           return (
             <Pressable
-              key={m}
-              onPress={() => setEntryMode(m)}
-              style={{flex: 1, paddingVertical: 10, borderRadius: 7, alignItems: 'center', backgroundColor: active ? T.surface2 : 'transparent', borderWidth: active ? 1 : 0, borderColor: T.accentBorder}}>
-              <Mono style={{fontSize: 12, fontWeight: '700', letterSpacing: 0.5, color: active ? T.accent : T.muted}}>
-                {m === 'paste' ? '⌗  Paste List' : '+  Manual Entry'}
+              key={mode}
+              onPress={() => {
+                if (mode === entryMode) return;
+                if (mode === 'manual') {
+                  // Moving from paste → manual: seed manual fields from pasted list
+                  const lines = text
+                    .split('\n')
+                    .map(l =>
+                      l
+                        .trim()
+                        .replace(/^(IN|OUT)\s*[:\-]?\s*/i, ''),
+                    )
+                    .filter(l => l && !/missing/i.test(l));
+                  setManualTimes(lines.length ? lines : ['']);
+                  setEntryMode('manual');
+                } else {
+                  setEntryMode('paste');
+                }
+              }}
+              style={{
+                flex: 1,
+                paddingVertical: 10,
+                borderRadius: 7,
+                alignItems: 'center',
+                backgroundColor: active ? T.surface2 : 'transparent',
+                borderWidth: active ? 1 : 0,
+                borderColor: T.accentBorder,
+              }}>
+              <Mono
+                style={{
+                  fontSize: 12,
+                  fontWeight: '700',
+                  letterSpacing: 0.5,
+                  color: active ? T.accent : T.muted,
+                }}>
+                {mode === 'paste' ? '⌗  Paste List' : '+  Manual Entry'}
               </Mono>
             </Pressable>
           );
@@ -405,7 +438,20 @@ function ShiftCalculator({isDark, onToggleTheme}: {isDark: boolean; onToggleThem
           <TextInput
             style={{minHeight: 180, color: T.text, fontFamily: 'Courier New', fontSize: 14, lineHeight: 24, padding: 16, letterSpacing: 0.4, backgroundColor: T.inputBg}}
             value={text}
-            onChangeText={v => setText(v.split('\n').filter(l => !/missing/i.test(l)).join('\n'))}
+            onChangeText={v => {
+              const rawLines = v
+                .split('\n')
+                .map(l =>
+                  l
+                    .trim()
+                    .replace(/^(IN|OUT)\s*[:\-]?\s*/i, ''),
+                )
+                .filter(l => l && !/missing/i.test(l));
+              const annotated = rawLines.map((l, idx) =>
+                `${idx % 2 === 0 ? 'IN' : 'OUT'} - ${l}`,
+              );
+              setText(annotated.join('\n'));
+            }}
             multiline textAlignVertical="top"
             placeholder={'9:51:28 AM\n10:41:33 AM\n11:06:22 AM\n1:46:16 PM\n4:19:56 PM\n7:31:16 PM'}
             placeholderTextColor={T.muted}
@@ -418,18 +464,40 @@ function ShiftCalculator({isDark, onToggleTheme}: {isDark: boolean; onToggleThem
       {entryMode === 'manual' && (
         <View style={card}>
           <CardHeader label="MANUAL PUNCH ENTRY" />
-          {manualTimes.map((val, i) => {
+            {manualTimes.map((val, i) => {
             const isIn = i % 2 === 0;
             const secs = parseTimeToSeconds(val);
             const valid = val.trim() !== '' && secs !== null;
             const invalid = val.trim() !== '' && secs === null;
+            const inBg = '#dcfce7';
+            const inBorder = '#22c55e';
+            const inText = '#16a34a';
+            const outBg = '#fee2e2';
+            const outBorder = '#ef4444';
+            const outText = '#dc2626';
             return (
-              <View key={i} style={{flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: T.border}}>
-                <Mono style={{fontSize: 10, color: T.muted, width: 18, textAlign: 'right'}}>{i + 1}</Mono>
-                {/* IN / OUT badge */}
-                <View style={{paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4, borderWidth: 1, backgroundColor: isIn ? T.accentDim : T.orangeDim, borderColor: isIn ? T.accentBorder : T.orangeBorder}}>
-                  <Mono style={{fontSize: 9, fontWeight: '700', letterSpacing: 0.5, color: isIn ? T.accent : T.orange}}>{isIn ? 'IN' : 'OUT'}</Mono>
-                </View>
+            <View key={i} style={{flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 14, paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: T.border}}>
+              <Mono style={{fontSize: 10, color: T.muted, width: 18, textAlign: 'right'}}>{i + 1}</Mono>
+              {/* IN / OUT badge */}
+              <View
+                style={{
+                  paddingHorizontal: 7,
+                  paddingVertical: 3,
+                  borderRadius: 4,
+                  borderWidth: 1,
+                  backgroundColor: isIn ? inBg : outBg,
+                  borderColor: isIn ? inBorder : outBorder,
+                }}>
+                <Mono
+                  style={{
+                    fontSize: 9,
+                    fontWeight: '700',
+                    letterSpacing: 0.5,
+                    color: isIn ? inText : outText,
+                  }}>
+                  {isIn ? 'IN' : 'OUT'}
+                </Mono>
+              </View>
                 {/* Time input */}
                 <TextInput
                   style={{flex: 1, backgroundColor: T.inputBg, borderWidth: 1, borderColor: valid ? T.accentBorder : invalid ? T.orangeBorder : T.border, borderRadius: 7, color: T.text, fontFamily: 'Courier New', fontSize: 13, paddingHorizontal: 10, paddingVertical: 8, letterSpacing: 0.3}}
