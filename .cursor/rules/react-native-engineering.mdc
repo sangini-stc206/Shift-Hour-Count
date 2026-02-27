@@ -1,0 +1,83 @@
+---
+description: React Native engineering standards for Expo app code
+alwaysApply: true
+---
+
+# React Native Engineering Rules
+
+## Simplicity and component boundaries
+- Keep UI simple, predictable, and readable in one pass.
+- One component solves one problem; split components as soon as they grow.
+- Separate presentation, business logic, and data access.
+- Keep props minimal, explicit, and predictable; avoid magic numbers.
+- In the page-system, each major section item must be implemented as its own block type rather than a large monolithic JSX file.
+- Any new block type must be registered in `@/page-system/blocks/index.jsx` before usage.
+- Prefer nested block composition via `innerBlocks` for section structures; avoid handling full-page section trees inside one component file.
+
+## Layout and styling
+- Never use margin for spacing.
+- Use `gap` for spacing between siblings and `padding` for internal spacing.
+- Parent components own layout; children must not control outer spacing.
+- Use one spacing scale across the app.
+- Use intent-based style names and keep visual hierarchy obvious.
+
+## Safe area ownership
+- Root-level safe area handling is centralized in `@/components/RootContainer/RootContainer.jsx`.
+- Do not add `useSafeAreaInsets`/SafeArea padding again in normal screens, navigators, tab bars, or shared layout wrappers when root already defines it.
+- Modal surfaces are treated differently from screens; modals must apply safe area insets locally when needed.
+
+## Interaction, gestures, and animation
+- Use `Pressable` for taps; do not use legacy touchables.
+- Use `react-native-gesture-handler` for gestures (drag/swipe/pan/pinch).
+- Use `react-native-reanimated` for animations.
+- Any per-frame or per-touch logic must run on the UI thread, not JS.
+
+## Lists and render performance
+- Use `FlatList` or `FlashList` for non-trivial or dynamic lists.
+- Do not use `ScrollView` for long lists and do not nest scroll views.
+- Avoid heavy logic during render and avoid inline functions in list items.
+- Memoize expensive calculations and use stable keys (never array index).
+
+## State and data flow
+- Use Zustand only for client UI/session state (not server data).
+- Use MMKV only for small persistent values (tokens, preferences, startup flags).
+- Use TanStack Query for all server state with consistent query keys.
+- Keep API flow: Component -> Hook -> Query/Mutation -> Axios.
+
+## API and helpers
+- Use exactly one Axios client instance with centralized interceptors.
+- Never call Axios directly inside components.
+- Keep helper files pure and single-responsibility.
+- Shared hooks start with `use`, have one responsibility, and avoid unnecessary side effects.
+
+## Imports and path alias
+- Use the `@/` alias for imports from `src/` (e.g. `@/constants/colors`, `@/config/tabs`, `@/redux/store`, `@/page-system/pages`, `@/screens/PageScreen`, `@/components/...`, `@/navigation/...`, `@/hooks/...`).
+- Do not use long relative paths for cross-directory imports (e.g. avoid `../../constants/colors`); use `@/constants/colors` instead.
+- Same-folder or same-package imports may use `./` (e.g. `./styles`, `./data`, `./blocks`).
+
+## Platform and dependency constraints
+- Keep behavior predictable across web and mobile without layout hacks.
+- Share business logic across platforms.
+- Do not introduce deprecated, unmaintained, JS-thread-heavy, or web-first libraries for critical native paths.
+- Prefer the simplest complete solution; avoid over-engineering.
+
+## Responsiveness practices (react-native-size-matters)
+- Use `react-native-size-matters` scaling helpers for responsive dimensions.
+- Import only what is needed from `s`, `vs`, `ms`, and `mvs`.
+- Use `s()`/`ms()` for horizontal values and `vs()`/`mvs()` for vertical values.
+- For square elements (icons, avatars, badges), use one scale function for both width and height (for example `ms(x)` for both).
+- Do not mix `s()` for width and `vs()` for height on the same square element.
+- Do not copy Figma pixel values 1:1; use practical base values and treat size-matters outputs as source of truth.
+
+## Responsive layout and spacing ownership
+- Parent containers own layout and spacing decisions.
+- Use `gap` on parents for sibling spacing; avoid child margins for layout spacing.
+- Avoid spacing duplication and alignment drift by keeping one source of truth in the parent container.
+- Prefer container-level flex + `gap` patterns over per-child spacing overrides.
+
+## Icon and label alignment rules
+- For rows with variable icon sizes (for example tab bars), reserve a consistent icon slot with matching `height` and `minHeight`.
+- Keep one parent-controlled vertical `gap` between icon slot and label.
+- Keep labels in the main layout flow; do not place labels inside floating overlays.
+- For floating/raised center icons, float only the icon container and keep label alignment in the standard row.
+- Use consistent label `lineHeight` across platforms to avoid baseline drift.
