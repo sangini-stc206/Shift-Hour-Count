@@ -23,7 +23,7 @@ export function Chip({label, color, bg, border}: ChipProps) {
       }}>
       <Mono
         style={{
-          fontSize: fs(8),
+          fontSize: fs(9),
           fontWeight: '700',
           color,
           letterSpacing: 1,

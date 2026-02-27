@@ -16,7 +16,7 @@ export function StatBox({label, value, color}: StatBoxProps) {
     <View style={{minWidth: '44%', flex: 1, gap: ms(3)}}>
       <Mono
         style={{
-          fontSize: fs(8),
+          fontSize: fs(9),
           color: T.muted,
           letterSpacing: 1.5,
         }}>
@@ -24,7 +24,7 @@ export function StatBox({label, value, color}: StatBoxProps) {
       </Mono>
       <Mono
         style={{
-          fontSize: fs(14),
+          fontSize: fs(15),
           fontWeight: '700',
           color,
           letterSpacing: 0.2,

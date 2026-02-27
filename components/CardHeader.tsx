@@ -31,7 +31,7 @@ export function CardHeader({label}: CardHeaderProps) {
       />
       <Mono
         style={{
-          fontSize: fs(9),
+          fontSize: fs(10),
           fontWeight: '700',
           color: T.muted,
           letterSpacing: 1.6,

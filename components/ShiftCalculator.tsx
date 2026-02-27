@@ -98,23 +98,86 @@ export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
     borderBottomColor: T.border,
   };
 
+  const showSticky = calc.validCount > 0;
+  const showLeaveTime =
+    calc.remaining === 0 || (calc.remaining > 0 && calc.completionAt !== null);
+
   return (
-    <ScrollView
-      style={{flex: 1, backgroundColor: T.bg, overflow: 'hidden'}}
-      contentContainerStyle={{
-        paddingHorizontal: ms(14),
-        paddingTop: ms(12),
-        paddingBottom: ms(24),
-        gap: ms(10),
-        flexGrow: 1,
-        maxWidth: '100%',
-      }}
-      showsHorizontalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled">
-      <Header isDark={isDark} onToggleTheme={onToggleTheme} />
+    <View style={{flex: 1, backgroundColor: T.bg}}>
+      <View style={{paddingHorizontal: ms(14), paddingTop: ms(12), gap: ms(10)}}>
+        <Header isDark={isDark} onToggleTheme={onToggleTheme} />
 
-      <TabBar tab={tab} onTabChange={setTab} />
+        {showSticky && (
+          <View
+            style={{
+              backgroundColor: T.surface,
+              borderRadius: ms(10),
+              borderWidth: 1,
+              borderColor: T.accentBorder,
+              padding: ms(12),
+              flexDirection: 'row',
+              gap: ms(16),
+            }}>
+            <View style={{flex: 1, gap: ms(2)}}>
+              <Mono style={{fontSize: fs(13), color: T.muted}}>
+                {calc.remaining === 0 ? 'You\'re done!' : 'You can leave at'}
+              </Mono>
+              <Mono
+                style={{
+                  fontSize: fs(17),
+                  fontWeight: '700',
+                  letterSpacing: -0.5,
+                  color: showLeaveTime ? T.accent : T.muted,
+                }}>
+                {showLeaveTime
+                  ? calc.remaining === 0
+                    ? '✓ 8 hours complete'
+                    : formatClock(calc.completionAt ?? 0)
+                  : '—'}
+              </Mono>
+            </View>
+            <View style={{flex: 1, gap: ms(2)}}>
+              <Mono style={{fontSize: fs(13), color: T.muted}}>
+                Hours worked
+              </Mono>
+              <View style={{flexDirection: 'row', alignItems: 'baseline', gap: ms(6)}}>
+                <Mono
+                  style={{
+                    fontSize: fs(17),
+                    fontWeight: '700',
+                    letterSpacing: -0.5,
+                    color: calc.total === 0 ? T.muted : T.accent,
+                  }}>
+                  {formatHMS(calc.total)}
+                </Mono>
+                <Mono
+                  style={{
+                    fontSize: fs(13),
+                    color: T.accent,
+                    fontWeight: '700',
+                  }}>
+                  {(calc.total / 3600).toFixed(2)} h
+                </Mono>
+              </View>
+            </View>
+          </View>
+        )}
 
+        <TabBar tab={tab} onTabChange={setTab} />
+      </View>
+
+      <ScrollView
+        style={{flex: 1, overflow: 'hidden'}}
+        contentContainerStyle={{
+          paddingHorizontal: ms(14),
+          paddingTop: ms(10),
+          paddingBottom: ms(24),
+          gap: ms(10),
+          flexGrow: 1,
+          maxWidth: '100%',
+        }}
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
       {tab === 'paste' && (
         <PasteInput
           card={card}
@@ -158,6 +221,7 @@ export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
         }}
       />
     </ScrollView>
+    </View>
   );
 }
 
@@ -180,14 +244,14 @@ function Header({
       <View style={{flex: 1, minWidth: 0, gap: ms(4)}}>
         <Mono
           style={{
-            fontSize: fs(22),
+            fontSize: fs(24),
             fontWeight: '800',
             color: T.text,
             letterSpacing: -1,
           }}>
           Shift<Text style={{color: T.accent}}>.</Text>Calc
         </Mono>
-        <Mono style={{fontSize: fs(10), color: T.muted}}>
+        <Mono style={{fontSize: fs(13), color: T.muted}}>
           Know when you've done your minimum 8 hours
         </Mono>
       </View>
@@ -231,7 +295,7 @@ function TabBar({
         }}>
         <Mono
           style={{
-            fontSize: fs(11),
+            fontSize: fs(13),
             fontWeight: '700',
             color: tab === 'paste' ? T.accent : T.muted,
           }}>
@@ -251,7 +315,7 @@ function TabBar({
         }}>
         <Mono
           style={{
-            fontSize: fs(11),
+            fontSize: fs(13),
             fontWeight: '700',
             color: tab === 'manual' ? T.accent : T.muted,
           }}>
@@ -276,14 +340,14 @@ function PasteInput({
     <View style={card}>
       <CardHeader label="QUICK PASTE" />
       <View style={{padding: ms(12), gap: ms(6)}}>
-        <Mono style={{fontSize: fs(10), color: T.muted, paddingBottom: ms(4)}}>
+        <Mono style={{fontSize: fs(13), color: T.muted, paddingBottom: ms(4)}}>
           Paste clock-in/out times, or add below
         </Mono>
         <TextInput
           style={{
             color: T.text,
             fontFamily: 'Courier New',
-            fontSize: fs(12),
+            fontSize: fs(13),
             padding: ms(12),
             letterSpacing: 0.4,
             backgroundColor: T.inputBg,
@@ -291,6 +355,8 @@ function PasteInput({
             borderWidth: 1,
             borderColor: T.border,
           }}
+          multiline={false}
+          numberOfLines={1}
           value={value}
           onChangeText={onChange}
           placeholder="9:30 AM, 1:09 PM, 2:00 PM"
@@ -298,7 +364,7 @@ function PasteInput({
           autoCorrect={false}
           autoCapitalize="none"
         />
-        <Mono style={{fontSize: fs(9), color: T.muted}}>
+        <Mono style={{fontSize: fs(13), color: T.muted}}>
           e.g. 9:30 AM, 1:00 PM, 2:00 PM
         </Mono>
       </View>
@@ -346,27 +412,20 @@ function PunchList({
               borderBottomWidth: 1,
               borderBottomColor: T.border,
             }}>
-            <Mono
-              style={{
-                fontSize: fs(9),
-                color: T.muted,
-                width: ms(16),
-                textAlign: 'right',
-              }}>
-              {i + 1}
-            </Mono>
             <View
               style={{
-                paddingHorizontal: ms(6),
-                paddingVertical: ms(2),
+                width: ms(40),
+                paddingVertical: ms(6),
                 borderRadius: ms(3),
                 borderWidth: 1,
                 backgroundColor: isIn ? inBg : outBg,
                 borderColor: isIn ? inBorder : outBorder,
+                justifyContent: 'center',
+                alignItems: 'center',
               }}>
               <Mono
                 style={{
-                  fontSize: fs(8),
+                  fontSize: fs(9),
                   fontWeight: '700',
                   letterSpacing: 0.5,
                   color: isIn ? inText : outText,
@@ -374,50 +433,35 @@ function PunchList({
                 {isIn ? 'IN' : 'OUT'}
               </Mono>
             </View>
-            <TextInput
-              style={{
-                flex: 1,
-                backgroundColor: T.inputBg,
-                borderWidth: 1,
-                borderColor: valid
-                  ? T.accentBorder
-                  : invalid
-                    ? T.orangeBorder
-                    : T.border,
-                borderRadius: ms(6),
-                color: T.text,
-                fontFamily: 'Courier New',
-                fontSize: fs(11),
-                paddingHorizontal: ms(8),
-                paddingVertical: ms(6),
-                letterSpacing: 0.3,
-              }}
-              value={val}
-              onChangeText={v =>
-                setManualTimes(prev => {
-                  const c = [...prev];
-                  c[i] = v;
-                  return c;
-                })
-              }
-              placeholder="9:30 AM"
-              placeholderTextColor={T.muted}
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
             <Pressable
               onPress={() => openPicker(i)}
               style={({pressed}) => ({
-                backgroundColor: pressed ? T.blueBorder : T.blueDim,
-                borderWidth: 1,
-                borderColor: T.blueBorder,
-                borderRadius: ms(6),
-                width: ms(32),
-                height: ms(32),
-                alignItems: 'center',
-                justifyContent: 'center',
+                flex: 1,
+                opacity: pressed ? 0.8 : 1,
               })}>
-              <Text style={{fontSize: fs(14)}}>🕐</Text>
+              <TextInput
+                style={{
+                  backgroundColor: T.inputBg,
+                  borderWidth: 1,
+                  borderColor: valid
+                    ? T.accentBorder
+                    : invalid
+                      ? T.orangeBorder
+                      : T.border,
+                  borderRadius: ms(6),
+                  color: T.text,
+                  fontFamily: 'Courier New',
+                  fontSize: fs(13),
+                  paddingHorizontal: ms(8),
+                  paddingVertical: ms(6),
+                  letterSpacing: 0.3,
+                }}
+                editable={false}
+                value={val}
+                placeholder="Press to select time"
+                placeholderTextColor={T.muted}
+                pointerEvents="none"
+              />
             </Pressable>
             <Pressable
               onPress={() =>
@@ -436,9 +480,9 @@ function PunchList({
               <Text
                 style={{
                   color: T.orange,
-                  fontSize: fs(18),
+                  fontSize: fs(20),
                   fontWeight: '300',
-                  lineHeight: fs(20),
+                  lineHeight: fs(22),
                 }}>
                 ×
               </Text>
@@ -459,7 +503,7 @@ function PunchList({
         })}>
         <Mono
           style={{
-            fontSize: fs(11),
+            fontSize: fs(13),
             fontWeight: '700',
             color: T.accent,
             letterSpacing: 0.5,
@@ -508,7 +552,7 @@ function BreakGapSelector({
               }}>
               <Mono
                 style={{
-                  fontSize: fs(11),
+                  fontSize: fs(13),
                   fontWeight: '700',
                   color: active ? T.accent : T.muted,
                 }}>
@@ -534,11 +578,6 @@ function ResultsCard({
   onClear: () => void;
 }) {
   const T = useTheme();
-  const showCompletionAt =
-    calc.validCount > 0 &&
-    calc.remaining > 0 &&
-    calc.completionAt !== null;
-  const showComplete = calc.validCount > 0 && calc.remaining === 0;
 
   return (
     <View style={card}>
@@ -551,7 +590,7 @@ function ResultsCard({
         }}>
         <Mono
           style={{
-            fontSize: fs(11),
+            fontSize: fs(13),
             fontWeight: '700',
             color: T.muted,
             letterSpacing: 1,
@@ -559,79 +598,6 @@ function ResultsCard({
           RESULT
         </Mono>
       </View>
-      {(showCompletionAt || showComplete) && (
-        <View
-          style={{
-            padding: ms(16),
-            paddingBottom: ms(14),
-            borderBottomWidth: 1,
-            borderBottomColor: T.border,
-            gap: ms(6),
-          }}>
-          <Mono
-            style={{
-              fontSize: fs(10),
-              color: T.muted,
-            }}>
-            {showComplete ? 'You\'re done!' : 'You can leave at'}
-          </Mono>
-          <Mono
-            style={{
-              fontSize: fs(36),
-              fontWeight: '700',
-              letterSpacing: -1,
-              lineHeight: fs(40),
-              color: T.accent,
-            }}>
-            {showComplete
-              ? '✓ 8 hours complete'
-              : formatClock(calc.completionAt ?? 0)}
-          </Mono>
-        </View>
-      )}
-
-      <View
-        style={{
-          padding: ms(16),
-          paddingBottom: ms(14),
-          borderBottomWidth: 1,
-          borderBottomColor: T.border,
-          gap: ms(6),
-        }}>
-        <Mono
-          style={{
-            fontSize: fs(10),
-            color: T.muted,
-          }}>
-          Hours worked so far
-        </Mono>
-        <Mono
-          style={{
-            fontSize: fs(36),
-            fontWeight: '700',
-            letterSpacing: -1,
-            lineHeight: fs(40),
-            color: calc.total === 0 ? T.muted : T.accent,
-          }}>
-          {formatHMS(calc.total)}
-        </Mono>
-        <View
-          style={{
-            alignSelf: 'flex-start',
-            backgroundColor: T.accentDim,
-            borderRadius: ms(4),
-            borderWidth: 1,
-            borderColor: T.accentBorder,
-            paddingHorizontal: ms(10),
-            paddingVertical: ms(3),
-          }}>
-          <Mono style={{fontSize: fs(11), color: T.accent, fontWeight: '700'}}>
-            {(calc.total / 3600).toFixed(2)} h
-          </Mono>
-        </View>
-      </View>
-
-
       {calc.validCount > 0 && (
         <View
           style={{
@@ -673,7 +639,7 @@ function ResultsCard({
           justifyContent: 'space-between',
           padding: ms(12),
         }}>
-        <Mono style={{fontSize: fs(10), color: T.muted}}>
+        <Mono style={{fontSize: fs(13), color: T.muted}}>
           {calc.validCount} time{calc.validCount !== 1 ? 's' : ''} entered
         </Mono>
         <Pressable
@@ -688,7 +654,7 @@ function ResultsCard({
           })}>
           <Mono
             style={{
-              fontSize: fs(10),
+              fontSize: fs(13),
               fontWeight: '700',
               color: T.orange,
               letterSpacing: 1,

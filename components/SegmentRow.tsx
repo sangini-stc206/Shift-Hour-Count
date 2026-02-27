@@ -38,7 +38,7 @@ export function SegmentRow({
         alignItems: 'center',
         gap: ms(8),
       }}>
-      <Mono style={{fontSize: fs(10), color: T.accent, width: ms(70)}}>
+      <Mono style={{fontSize: fs(11), color: T.accent, width: ms(70)}}>
         {inLabel}
       </Mono>
       <View
@@ -63,7 +63,7 @@ export function SegmentRow({
       </View>
       <Mono
         style={{
-          fontSize: fs(10),
+          fontSize: fs(11),
           color: isOpen ? T.muted : T.orange,
           width: ms(68),
           textAlign: 'right',
@@ -72,7 +72,7 @@ export function SegmentRow({
       </Mono>
       <Mono
         style={{
-          fontSize: fs(10),
+          fontSize: fs(11),
           color: isOpen ? T.accent : T.muted,
           width: ms(48),
           textAlign: 'right',
