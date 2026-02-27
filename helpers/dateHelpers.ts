@@ -36,8 +36,9 @@ export function parsePastedTimes(text: string): string[] {
   return normalized
     .split(/[\n,;]+/)
     .map(l => l.trim().replace(/^(IN|OUT)\s*[:\-]?\s*/i, ''))
-    .filter(l => l && !/missing/i.test(l));
+    .filter(l => l && !/missing/i.test(l) && parseTimeToSeconds(l) !== null);
 }
+
 
 export function formatClock(totalSecs: number): string {
   const day = 24 * 3600;

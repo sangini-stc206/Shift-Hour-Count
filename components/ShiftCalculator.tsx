@@ -14,10 +14,8 @@ import {useTheme} from '../theme/ThemeContext';
 import {parseTimeToSeconds, formatHMS, formatClock, parsePastedTimes} from '../helpers/dateHelpers';
 import {useShiftCalculation} from '../hooks/useShiftCalculation';
 import {CardHeader} from './CardHeader';
-import {Chip} from './Chip';
 import {Mono} from './Mono';
-import {ProgressBar} from './ProgressBar';
-import {SegmentRow} from './SegmentRow';
+
 import {StatBox} from './StatBox';
 import {ThemeToggle} from './ThemeToggle';
 
@@ -40,10 +38,6 @@ export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
 
   const calc = useShiftCalculation(manualTimes, rejoinGap);
   const showGap = !calc.hasOdd && calc.remaining > 0 && calc.validCount > 0;
-
-  const now = new Date();
-  const nowSecs =
-    now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
 
   function openPicker(index: number) {
     const secs = parseTimeToSeconds(manualTimes[index] ?? '');
@@ -124,25 +118,7 @@ export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
         onChange={handlePasteInputChange}
       />
 
-      {calc.hasOdd && calc.validCount > 0 && (
-        <View
-          style={{
-            backgroundColor: T.warningDim,
-            borderRadius: ms(6),
-            borderWidth: 1,
-            borderColor: T.warningBorder,
-            padding: ms(10),
-          }}>
-          <Mono
-            style={{
-              fontSize: fs(11),
-              color: T.warning,
-              letterSpacing: 0.2,
-            }}>
-            ⚠  Odd punch count — last entry treated as open IN punch.
-          </Mono>
-        </View>
-      )}
+
 
       <PunchList
         card={card}
@@ -150,6 +126,7 @@ export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
         setManualTimes={setManualTimes}
         openPicker={openPicker}
       />
+
 
       {pickerVisible && pickerIndex !== null && (
         <DateTimePicker
@@ -172,7 +149,6 @@ export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
         card={card}
         section={section}
         calc={calc}
-        nowSecs={nowSecs}
         onClear={() => {
           setPasteInput('');
           setManualTimes(['']);
@@ -198,7 +174,7 @@ function Header({
         alignItems: 'flex-start',
         paddingBottom: ms(2),
       }}>
-      <View style={{flex: 1, minWidth: 0, gap: ms(5)}}>
+      <View style={{flex: 1, minWidth: 0, gap: ms(4)}}>
         <Mono
           style={{
             fontSize: fs(22),
@@ -208,23 +184,13 @@ function Header({
           }}>
           Shift<Text style={{color: T.accent}}>.</Text>Calc
         </Mono>
+        <Mono style={{fontSize: fs(10), color: T.muted}}>
+          Know when you've done your minimum 8 hours
+        </Mono>
       </View>
       <View style={{alignItems: 'flex-end', gap: ms(8), flexShrink: 1}}>
         <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
-        <View style={{flexDirection: 'row', gap: ms(5)}}>
-          <Chip
-            label="MIN 8H"
-            color={T.accent}
-            bg={T.accentDim}
-            border={T.accentBorder}
-          />
-          <Chip
-            label="LIVE"
-            color={T.blue}
-            bg={T.blueDim}
-            border={T.blueBorder}
-          />
-        </View>
+  
       </View>
     </View>
   );
@@ -242,23 +208,34 @@ function PasteInput({
   const T = useTheme();
   return (
     <View style={card}>
-      <CardHeader label="PUNCH TIMELINE" />
-      <TextInput
-        style={{
-          color: T.text,
-          fontFamily: 'Courier New',
-          fontSize: fs(12),
-          padding: ms(12),
-          letterSpacing: 0.4,
-          backgroundColor: T.inputBg,
-        }}
-        value={value}
-        onChangeText={onChange}
-        placeholder="Paste times: 9:30 AM, 1:09 PM, 2:00 PM"
-        placeholderTextColor={T.muted}
-        autoCorrect={false}
-        autoCapitalize="none"
-      />
+      <CardHeader label="QUICK PASTE" />
+      <View style={{padding: ms(12), gap: ms(6)}}>
+        <Mono style={{fontSize: fs(10), color: T.muted, paddingBottom: ms(4)}}>
+          Paste clock-in/out times, or add below
+        </Mono>
+        <TextInput
+          style={{
+            color: T.text,
+            fontFamily: 'Courier New',
+            fontSize: fs(12),
+            padding: ms(12),
+            letterSpacing: 0.4,
+            backgroundColor: T.inputBg,
+            borderRadius: ms(6),
+            borderWidth: 1,
+            borderColor: T.border,
+          }}
+          value={value}
+          onChangeText={onChange}
+          placeholder="9:30 AM, 1:09 PM, 2:00 PM"
+          placeholderTextColor={T.muted}
+          autoCorrect={false}
+          autoCapitalize="none"
+        />
+        <Mono style={{fontSize: fs(9), color: T.muted}}>
+          e.g. 9:30 AM, 1:00 PM, 2:00 PM
+        </Mono>
+      </View>
     </View>
   );
 }
@@ -284,7 +261,7 @@ function PunchList({
 
   return (
     <View style={card}>
-      <CardHeader label="PUNCH ENTRIES" />
+      <CardHeader label="YOUR TIMES" />
       <View style={{gap: ms(10)}}>
       {manualTimes.map((val, i) => {
         const isIn = i % 2 === 0;
@@ -357,7 +334,7 @@ function PunchList({
                   return c;
                 })
               }
-              placeholder="9:51 AM"
+              placeholder="9:30 AM"
               placeholderTextColor={T.muted}
               autoCorrect={false}
               autoCapitalize="none"
@@ -421,7 +398,7 @@ function PunchList({
             color: T.accent,
             letterSpacing: 0.5,
           }}>
-          + Add Punch Time
+          + Add time
         </Mono>
       </Pressable>
       </View>
@@ -441,7 +418,7 @@ function BreakGapSelector({
   const T = useTheme();
   return (
     <View style={card}>
-      <CardHeader label="RETURN AFTER BREAK" />
+      <CardHeader label="BREAK DURATION" />
       <View
         style={{
           flexDirection: 'row',
@@ -483,18 +460,70 @@ function ResultsCard({
   card,
   section,
   calc,
-  nowSecs,
   onClear,
 }: {
   card: object;
   section: object;
   calc: ReturnType<typeof useShiftCalculation>;
-  nowSecs: number;
   onClear: () => void;
 }) {
   const T = useTheme();
+  const showCompletionAt =
+    calc.validCount > 0 &&
+    calc.remaining > 0 &&
+    calc.completionAt !== null;
+  const showComplete = calc.validCount > 0 && calc.remaining === 0;
+
   return (
     <View style={card}>
+      <View
+        style={{
+          padding: ms(12),
+          paddingBottom: ms(8),
+          borderBottomWidth: 1,
+          borderBottomColor: T.border,
+        }}>
+        <Mono
+          style={{
+            fontSize: fs(11),
+            fontWeight: '700',
+            color: T.muted,
+            letterSpacing: 1,
+          }}>
+          RESULT
+        </Mono>
+      </View>
+      {(showCompletionAt || showComplete) && (
+        <View
+          style={{
+            padding: ms(16),
+            paddingBottom: ms(14),
+            borderBottomWidth: 1,
+            borderBottomColor: T.border,
+            gap: ms(6),
+          }}>
+          <Mono
+            style={{
+              fontSize: fs(10),
+              color: T.muted,
+            }}>
+            {showComplete ? 'You\'re done!' : 'You can leave at'}
+          </Mono>
+          <Mono
+            style={{
+              fontSize: fs(36),
+              fontWeight: '700',
+              letterSpacing: -1,
+              lineHeight: fs(40),
+              color: T.accent,
+            }}>
+            {showComplete
+              ? '✓ 8 hours complete'
+              : formatClock(calc.completionAt ?? 0)}
+          </Mono>
+        </View>
+      )}
+
       <View
         style={{
           padding: ms(16),
@@ -505,11 +534,10 @@ function ResultsCard({
         }}>
         <Mono
           style={{
-            fontSize: fs(9),
+            fontSize: fs(10),
             color: T.muted,
-            letterSpacing: 2,
           }}>
-          EFFECTIVE DURATION
+          Hours worked so far
         </Mono>
         <Mono
           style={{
@@ -537,9 +565,6 @@ function ResultsCard({
         </View>
       </View>
 
-      <View style={section}>
-        <ProgressBar pct={calc.pct} />
-      </View>
 
       {calc.validCount > 0 && (
         <View
@@ -552,71 +577,26 @@ function ResultsCard({
           {calc.remaining > 0 && calc.completionAt !== null ? (
             <>
               <StatBox
-                label="REMAINING"
+                label="Time left"
                 value={formatHMS(calc.remaining)}
                 color={T.orange}
               />
-              <StatBox
-                label="8H DONE AT"
-                value={formatClock(calc.completionAt)}
-                color={T.accent}
-              />
               {calc.suggestedIn !== null && (
                 <StatBox
-                  label="PUNCH IN AT"
+                  label="Clock in by"
                   value={formatClock(calc.suggestedIn)}
                   color={T.blue}
                 />
               )}
               <StatBox
-                label="STATUS"
-                value={calc.hasOdd ? '● PUNCHED IN' : '○ ON BREAK'}
+                label="Status"
+                value={calc.hasOdd ? '● At work' : '○ On break'}
                 color={calc.hasOdd ? T.accent : T.orange}
               />
             </>
           ) : calc.remaining === 0 ? (
-            <StatBox label="STATUS" value="✓  8H COMPLETE" color={T.accent} />
+            <StatBox label="Status" value="✓ 8 hours done" color={T.accent} />
           ) : null}
-        </View>
-      )}
-
-      {calc.pairs.length > 0 && (
-        <View style={{...section, gap: ms(12)}}>
-          <Mono
-            style={{
-              fontSize: fs(9),
-              color: T.muted,
-              letterSpacing: 1.5,
-            }}>
-            SHIFT SEGMENTS
-          </Mono>
-          <View style={{gap: ms(6)}}>
-            {calc.pairs.map((p, i) => (
-              <SegmentRow
-                key={i}
-                inLabel={formatClock(p.inS)}
-                outLabel={formatClock(p.outS)}
-                inSecs={p.inS}
-                outSecs={p.outS}
-                dur={p.dur}
-                minT={calc.minT}
-                maxT={calc.maxT}
-              />
-            ))}
-            {calc.hasOdd && calc.openInSecs !== null && (
-              <SegmentRow
-                key="open"
-                inLabel={formatClock(calc.openInSecs)}
-                outLabel="now…"
-                inSecs={calc.openInSecs}
-                outSecs={nowSecs}
-                dur={Math.max(0, nowSecs - calc.openInSecs)}
-                minT={calc.minT}
-                maxT={Math.max(calc.maxT, nowSecs)}
-                isOpen
-              />
-            )}
-          </View>
         </View>
       )}
 
@@ -628,7 +608,7 @@ function ResultsCard({
           padding: ms(12),
         }}>
         <Mono style={{fontSize: fs(10), color: T.muted}}>
-          Valid entries: {calc.validCount}
+          {calc.validCount} time{calc.validCount !== 1 ? 's' : ''} entered
         </Mono>
         <Pressable
           onPress={onClear}
@@ -647,7 +627,7 @@ function ResultsCard({
               color: T.orange,
               letterSpacing: 1,
             }}>
-            ✕  CLEAR
+            Clear all
           </Mono>
         </Pressable>
       </View>
