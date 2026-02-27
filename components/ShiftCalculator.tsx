@@ -29,6 +29,7 @@ type ShiftCalculatorProps = {
 export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
   const T = useTheme();
 
+  const [tab, setTab] = useState<'paste' | 'manual'>('paste');
   const [pasteInput, setPasteInput] = useState('');
   const [manualTimes, setManualTimes] = useState<string[]>(['']);
   const [rejoinGap, setRejoinGap] = useState(30);
@@ -112,13 +113,15 @@ export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
       keyboardShouldPersistTaps="handled">
       <Header isDark={isDark} onToggleTheme={onToggleTheme} />
 
-      <PasteInput
-        card={card}
-        value={pasteInput}
-        onChange={handlePasteInputChange}
-      />
+      <TabBar tab={tab} onTabChange={setTab} />
 
-
+      {tab === 'paste' && (
+        <PasteInput
+          card={card}
+          value={pasteInput}
+          onChange={handlePasteInputChange}
+        />
+      )}
 
       <PunchList
         card={card}
@@ -192,6 +195,69 @@ function Header({
         <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
   
       </View>
+    </View>
+  );
+}
+
+function TabBar({
+  tab,
+  onTabChange,
+}: {
+  tab: 'paste' | 'manual';
+  onTabChange: (t: 'paste' | 'manual') => void;
+}) {
+  const T = useTheme();
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        backgroundColor: T.surface,
+        borderRadius: ms(8),
+        borderWidth: 1,
+        borderColor: T.border,
+        padding: ms(3),
+        gap: ms(3),
+      }}>
+      <Pressable
+        onPress={() => onTabChange('paste')}
+        style={{
+          flex: 1,
+          paddingVertical: ms(8),
+          borderRadius: ms(6),
+          alignItems: 'center',
+          backgroundColor: tab === 'paste' ? T.surface2 : 'transparent',
+          borderWidth: tab === 'paste' ? 1 : 0,
+          borderColor: T.accentBorder,
+        }}>
+        <Mono
+          style={{
+            fontSize: fs(11),
+            fontWeight: '700',
+            color: tab === 'paste' ? T.accent : T.muted,
+          }}>
+          Quick paste
+        </Mono>
+      </Pressable>
+      <Pressable
+        onPress={() => onTabChange('manual')}
+        style={{
+          flex: 1,
+          paddingVertical: ms(8),
+          borderRadius: ms(6),
+          alignItems: 'center',
+          backgroundColor: tab === 'manual' ? T.surface2 : 'transparent',
+          borderWidth: tab === 'manual' ? 1 : 0,
+          borderColor: T.accentBorder,
+        }}>
+        <Mono
+          style={{
+            fontSize: fs(11),
+            fontWeight: '700',
+            color: tab === 'manual' ? T.accent : T.muted,
+          }}>
+          Manual times
+        </Mono>
+      </Pressable>
     </View>
   );
 }
