@@ -1,6 +1,6 @@
 import React, {useRef, useEffect} from 'react';
 import {View, Animated, Easing} from 'react-native';
-import {ms} from '../constants/spacing';
+import {ms, fs} from '../constants/spacing';
 import {useTheme} from '../theme/ThemeContext';
 import {Mono} from './Mono';
 
@@ -20,9 +20,9 @@ export function ProgressBar({pct}: ProgressBarProps) {
     }).start();
   }, [pct, anim]);
   const color = pct >= 100 ? T.accent : pct >= 60 ? T.blue : T.orange;
-  const barHeight = ms(6);
+  const barHeight = ms(5);
   return (
-    <View style={{gap: ms(10)}}>
+    <View style={{gap: ms(8)}}>
       <View
         style={{
           flexDirection: 'row',
@@ -30,13 +30,13 @@ export function ProgressBar({pct}: ProgressBarProps) {
         }}>
         <Mono
           style={{
-            fontSize: ms(10),
+            fontSize: fs(9),
             color: T.muted,
             letterSpacing: 1.4,
           }}>
           PROGRESS TO 8 HOURS
         </Mono>
-        <Mono style={{fontSize: ms(11), fontWeight: '700', color}}>
+        <Mono style={{fontSize: fs(10), fontWeight: '700', color}}>
           {pct}%
         </Mono>
       </View>

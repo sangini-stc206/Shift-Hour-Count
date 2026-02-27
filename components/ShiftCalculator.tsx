@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   Text,
   TextInput,
@@ -9,9 +9,9 @@ import {
 import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
-import {ms} from '../constants/spacing';
+import {ms, fs} from '../constants/spacing';
 import {useTheme} from '../theme/ThemeContext';
-import {parseTimeToSeconds, formatHMS, formatClock} from '../helpers/dateHelpers';
+import {parseTimeToSeconds, formatHMS, formatClock, parsePastedTimes} from '../helpers/dateHelpers';
 import {useShiftCalculation} from '../hooks/useShiftCalculation';
 import {CardHeader} from './CardHeader';
 import {Chip} from './Chip';
@@ -31,15 +31,14 @@ type ShiftCalculatorProps = {
 export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
   const T = useTheme();
 
-  const [entryMode, setEntryMode] = useState<'paste' | 'manual'>('paste');
-  const [text, setText] = useState('');
+  const [pasteInput, setPasteInput] = useState('');
   const [manualTimes, setManualTimes] = useState<string[]>(['']);
   const [rejoinGap, setRejoinGap] = useState(30);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerIndex, setPickerIndex] = useState<number | null>(null);
   const [pickerValue, setPickerValue] = useState(new Date());
 
-  const calc = useShiftCalculation(text, manualTimes, entryMode, rejoinGap);
+  const calc = useShiftCalculation(manualTimes, rejoinGap);
   const showGap = !calc.hasOdd && calc.remaining > 0 && calc.validCount > 0;
 
   const now = new Date();
@@ -77,31 +76,29 @@ export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
     setPickerIndex(null);
   }
 
-  function handleModeSwitch(mode: 'paste' | 'manual') {
-    if (mode === entryMode) return;
-    if (mode === 'manual') {
-      const normalized = text.replace(/\\n/g, '\n');
-      const lines = normalized
-        .split('\n')
-        .map(l => l.trim().replace(/^(IN|OUT)\s*[:\-]?\s*/i, ''))
-        .filter(l => l && !/missing/i.test(l));
-      setManualTimes(lines.length ? lines : ['']);
-      setEntryMode('manual');
-    } else {
-      setEntryMode('paste');
+  function handlePasteInputChange(v: string) {
+    setPasteInput(v);
+    const lines = parsePastedTimes(v);
+    if (lines.length > 0) {
+      setManualTimes(lines);
     }
   }
 
+  useEffect(() => {
+    const synced = manualTimes.filter(Boolean).join(', ');
+    setPasteInput(prev => (prev !== synced ? synced : prev));
+  }, [manualTimes]);
+
   const card = {
     backgroundColor: T.surface,
-    borderRadius: ms(14),
+    borderRadius: ms(12),
     borderWidth: 1,
     borderColor: T.border,
     overflow: 'hidden' as const,
   };
 
   const section = {
-    padding: ms(18),
+    padding: ms(14),
     borderBottomWidth: 1,
     borderBottomColor: T.border,
   };
@@ -110,34 +107,35 @@ export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
     <ScrollView
       style={{flex: 1, backgroundColor: T.bg, overflow: 'hidden'}}
       contentContainerStyle={{
-        paddingHorizontal: ms(18),
-        paddingTop: ms(16),
-        paddingBottom: ms(40),
-        gap: ms(12),
+        paddingHorizontal: ms(14),
+        paddingTop: ms(12),
+        paddingBottom: ms(24),
+        gap: ms(10),
         flexGrow: 1,
+        maxWidth: '100%',
       }}
       showsHorizontalScrollIndicator={false}
       keyboardShouldPersistTaps="handled">
       <Header isDark={isDark} onToggleTheme={onToggleTheme} />
 
-      <ModeToggle
-        entryMode={entryMode}
-        onModeSwitch={handleModeSwitch}
-        text={text}
+      <PasteInput
+        card={card}
+        value={pasteInput}
+        onChange={handlePasteInputChange}
       />
 
       {calc.hasOdd && calc.validCount > 0 && (
         <View
           style={{
             backgroundColor: T.warningDim,
-            borderRadius: ms(8),
+            borderRadius: ms(6),
             borderWidth: 1,
             borderColor: T.warningBorder,
-            padding: ms(12),
+            padding: ms(10),
           }}>
           <Mono
             style={{
-              fontSize: ms(12),
+              fontSize: fs(11),
               color: T.warning,
               letterSpacing: 0.2,
             }}>
@@ -146,18 +144,12 @@ export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
         </View>
       )}
 
-      {entryMode === 'paste' && (
-        <PasteInput card={card} text={text} setText={setText} />
-      )}
-
-      {entryMode === 'manual' && (
-        <ManualInput
-          card={card}
-          manualTimes={manualTimes}
-          setManualTimes={setManualTimes}
-          openPicker={openPicker}
-        />
-      )}
+      <PunchList
+        card={card}
+        manualTimes={manualTimes}
+        setManualTimes={setManualTimes}
+        openPicker={openPicker}
+      />
 
       {pickerVisible && pickerIndex !== null && (
         <DateTimePicker
@@ -182,7 +174,7 @@ export function ShiftCalculator({isDark, onToggleTheme}: ShiftCalculatorProps) {
         calc={calc}
         nowSecs={nowSecs}
         onClear={() => {
-          setText('');
+          setPasteInput('');
           setManualTimes(['']);
         }}
       />
@@ -206,26 +198,18 @@ function Header({
         alignItems: 'flex-start',
         paddingBottom: ms(2),
       }}>
-      <View style={{gap: ms(5)}}>
+      <View style={{flex: 1, minWidth: 0, gap: ms(5)}}>
         <Mono
           style={{
-            fontSize: ms(30),
+            fontSize: fs(22),
             fontWeight: '800',
             color: T.text,
             letterSpacing: -1,
           }}>
           Shift<Text style={{color: T.accent}}>.</Text>Calc
         </Mono>
-        <Mono
-          style={{
-            fontSize: ms(9),
-            color: T.muted,
-            letterSpacing: 1.2,
-          }}>
-          SECTOR 1 · NOIDA · EFFECTIVE HOURS
-        </Mono>
       </View>
-      <View style={{alignItems: 'flex-end', gap: ms(8)}}>
+      <View style={{alignItems: 'flex-end', gap: ms(8), flexShrink: 1}}>
         <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
         <View style={{flexDirection: 'row', gap: ms(5)}}>
           <Chip
@@ -246,66 +230,14 @@ function Header({
   );
 }
 
-function ModeToggle({
-  entryMode,
-  onModeSwitch,
-  text,
-}: {
-  entryMode: 'paste' | 'manual';
-  onModeSwitch: (mode: 'paste' | 'manual') => void;
-  text: string;
-}) {
-  const T = useTheme();
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        backgroundColor: T.surface,
-        borderRadius: ms(10),
-        borderWidth: 1,
-        borderColor: T.border,
-        padding: ms(4),
-        gap: ms(4),
-      }}>
-      {(['paste', 'manual'] as const).map(mode => {
-        const active = entryMode === mode;
-        return (
-          <Pressable
-            key={mode}
-            onPress={() => onModeSwitch(mode)}
-            style={{
-              flex: 1,
-              paddingVertical: ms(10),
-              borderRadius: ms(7),
-              alignItems: 'center',
-              backgroundColor: active ? T.surface2 : 'transparent',
-              borderWidth: active ? 1 : 0,
-              borderColor: T.accentBorder,
-            }}>
-            <Mono
-              style={{
-                fontSize: ms(12),
-                fontWeight: '700',
-                letterSpacing: 0.5,
-                color: active ? T.accent : T.muted,
-              }}>
-              {mode === 'paste' ? '⌗  Paste List' : '+  Manual Entry'}
-            </Mono>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
-}
-
 function PasteInput({
   card,
-  text,
-  setText,
+  value,
+  onChange,
 }: {
   card: object;
-  text: string;
-  setText: (v: string) => void;
+  value: string;
+  onChange: (v: string) => void;
 }) {
   const T = useTheme();
   return (
@@ -313,36 +245,16 @@ function PasteInput({
       <CardHeader label="PUNCH TIMELINE" />
       <TextInput
         style={{
-          minHeight: ms(180),
           color: T.text,
           fontFamily: 'Courier New',
-          fontSize: ms(14),
-          lineHeight: ms(24),
-          padding: ms(16),
+          fontSize: fs(12),
+          padding: ms(12),
           letterSpacing: 0.4,
           backgroundColor: T.inputBg,
         }}
-        value={text}
-        onChangeText={v => {
-          const normalized = v.replace(/\\n/g, '\n');
-          const rawLines = normalized
-            .split('\n')
-            .map(l => l.trim().replace(/^(IN|OUT)\s*[:\-]?\s*/i, ''))
-            .filter(l => l && !/missing/i.test(l));
-          const annotated = rawLines.map(
-            (l, idx) => `${idx % 2 === 0 ? 'IN' : 'OUT'} - ${l}`,
-          );
-          setText(annotated.join('\n'));
-        }}
-        multiline
-        textAlignVertical="top"
-        placeholder={`Paste punch times, one per line
-9:51:28 AM
-10:41:33 AM
-11:06:22 AM
-1:46:16 PM
-4:19:56 PM
-7:31:16 PM`}
+        value={value}
+        onChangeText={onChange}
+        placeholder="Paste times: 9:30 AM, 1:09 PM, 2:00 PM"
         placeholderTextColor={T.muted}
         autoCorrect={false}
         autoCapitalize="none"
@@ -351,7 +263,7 @@ function PasteInput({
   );
 }
 
-function ManualInput({
+function PunchList({
   card,
   manualTimes,
   setManualTimes,
@@ -372,8 +284,8 @@ function ManualInput({
 
   return (
     <View style={card}>
-      <CardHeader label="MANUAL PUNCH ENTRY" />
-      <View style={{gap: ms(14)}}>
+      <CardHeader label="PUNCH ENTRIES" />
+      <View style={{gap: ms(10)}}>
       {manualTimes.map((val, i) => {
         const isIn = i % 2 === 0;
         const secs = parseTimeToSeconds(val);
@@ -381,37 +293,37 @@ function ManualInput({
         const invalid = val.trim() !== '' && secs === null;
         return (
           <View
-            key={i}
+            key={`${i}-${val || 'empty'}`}
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: ms(7),
-              paddingHorizontal: ms(14),
-              paddingVertical: ms(9),
+              gap: ms(6),
+              paddingHorizontal: ms(12),
+              paddingVertical: ms(8),
               borderBottomWidth: 1,
               borderBottomColor: T.border,
             }}>
             <Mono
               style={{
-                fontSize: ms(10),
+                fontSize: fs(9),
                 color: T.muted,
-                width: ms(18),
+                width: ms(16),
                 textAlign: 'right',
               }}>
               {i + 1}
             </Mono>
             <View
               style={{
-                paddingHorizontal: ms(7),
-                paddingVertical: ms(3),
-                borderRadius: ms(4),
+                paddingHorizontal: ms(6),
+                paddingVertical: ms(2),
+                borderRadius: ms(3),
                 borderWidth: 1,
                 backgroundColor: isIn ? inBg : outBg,
                 borderColor: isIn ? inBorder : outBorder,
               }}>
               <Mono
                 style={{
-                  fontSize: ms(9),
+                  fontSize: fs(8),
                   fontWeight: '700',
                   letterSpacing: 0.5,
                   color: isIn ? inText : outText,
@@ -429,12 +341,12 @@ function ManualInput({
                   : invalid
                     ? T.orangeBorder
                     : T.border,
-                borderRadius: ms(7),
+                borderRadius: ms(6),
                 color: T.text,
                 fontFamily: 'Courier New',
-                fontSize: ms(13),
-                paddingHorizontal: ms(10),
-                paddingVertical: ms(8),
+                fontSize: fs(11),
+                paddingHorizontal: ms(8),
+                paddingVertical: ms(6),
                 letterSpacing: 0.3,
               }}
               value={val}
@@ -456,13 +368,13 @@ function ManualInput({
                 backgroundColor: pressed ? T.blueBorder : T.blueDim,
                 borderWidth: 1,
                 borderColor: T.blueBorder,
-                borderRadius: ms(7),
-                width: ms(36),
-                height: ms(36),
+                borderRadius: ms(6),
+                width: ms(32),
+                height: ms(32),
                 alignItems: 'center',
                 justifyContent: 'center',
               })}>
-              <Text style={{fontSize: ms(16)}}>🕐</Text>
+              <Text style={{fontSize: fs(14)}}>🕐</Text>
             </Pressable>
             <Pressable
               onPress={() =>
@@ -471,9 +383,9 @@ function ManualInput({
                 )
               }
               style={({pressed}) => ({
-                width: ms(28),
-                height: ms(28),
-                borderRadius: ms(6),
+                width: ms(24),
+                height: ms(24),
+                borderRadius: ms(5),
                 alignItems: 'center',
                 justifyContent: 'center',
                 backgroundColor: pressed ? T.orangeDim : 'transparent',
@@ -481,9 +393,9 @@ function ManualInput({
               <Text
                 style={{
                   color: T.orange,
-                  fontSize: ms(20),
+                  fontSize: fs(18),
                   fontWeight: '300',
-                  lineHeight: ms(22),
+                  lineHeight: fs(20),
                 }}>
                 ×
               </Text>
@@ -494,17 +406,17 @@ function ManualInput({
       <Pressable
         onPress={() => setManualTimes(prev => [...prev, ''])}
         style={({pressed}) => ({
-          padding: ms(14),
+          padding: ms(12),
           borderWidth: 1,
           borderColor: T.accentBorder,
           borderStyle: 'dashed',
-          borderRadius: ms(8),
+          borderRadius: ms(6),
           alignItems: 'center',
           backgroundColor: pressed ? T.accentDim : 'transparent',
         })}>
         <Mono
           style={{
-            fontSize: ms(13),
+            fontSize: fs(11),
             fontWeight: '700',
             color: T.accent,
             letterSpacing: 0.5,
@@ -534,8 +446,8 @@ function BreakGapSelector({
         style={{
           flexDirection: 'row',
           flexWrap: 'wrap',
-          gap: ms(8),
-          padding: ms(14),
+          gap: ms(6),
+          padding: ms(12),
         }}>
         {GAP_OPTIONS.map(m => {
           const active = rejoinGap === m;
@@ -544,16 +456,16 @@ function BreakGapSelector({
               key={m}
               onPress={() => setRejoinGap(m)}
               style={{
-                paddingHorizontal: ms(16),
-                paddingVertical: ms(8),
-                borderRadius: ms(20),
+                paddingHorizontal: ms(12),
+                paddingVertical: ms(6),
+                borderRadius: ms(16),
                 borderWidth: 1,
                 borderColor: active ? T.accentBorder : T.border,
                 backgroundColor: active ? T.accentDim : T.inputBg,
               }}>
               <Mono
                 style={{
-                  fontSize: ms(12),
+                  fontSize: fs(11),
                   fontWeight: '700',
                   color: active ? T.accent : T.muted,
                 }}>
@@ -585,15 +497,15 @@ function ResultsCard({
     <View style={card}>
       <View
         style={{
-          padding: ms(22),
-          paddingBottom: ms(18),
+          padding: ms(16),
+          paddingBottom: ms(14),
           borderBottomWidth: 1,
           borderBottomColor: T.border,
-          gap: ms(8),
+          gap: ms(6),
         }}>
         <Mono
           style={{
-            fontSize: ms(10),
+            fontSize: fs(9),
             color: T.muted,
             letterSpacing: 2,
           }}>
@@ -601,10 +513,10 @@ function ResultsCard({
         </Mono>
         <Mono
           style={{
-            fontSize: ms(50),
+            fontSize: fs(36),
             fontWeight: '700',
             letterSpacing: -1,
-            lineHeight: ms(54),
+            lineHeight: fs(40),
             color: calc.total === 0 ? T.muted : T.accent,
           }}>
           {formatHMS(calc.total)}
@@ -613,13 +525,13 @@ function ResultsCard({
           style={{
             alignSelf: 'flex-start',
             backgroundColor: T.accentDim,
-            borderRadius: ms(5),
+            borderRadius: ms(4),
             borderWidth: 1,
             borderColor: T.accentBorder,
-            paddingHorizontal: ms(12),
-            paddingVertical: ms(4),
+            paddingHorizontal: ms(10),
+            paddingVertical: ms(3),
           }}>
-          <Mono style={{fontSize: ms(13), color: T.accent, fontWeight: '700'}}>
+          <Mono style={{fontSize: fs(11), color: T.accent, fontWeight: '700'}}>
             {(calc.total / 3600).toFixed(2)} h
           </Mono>
         </View>
@@ -635,7 +547,7 @@ function ResultsCard({
             ...(section as object),
             flexDirection: 'row',
             flexWrap: 'wrap',
-            gap: ms(16),
+            gap: ms(12),
           }}>
           {calc.remaining > 0 && calc.completionAt !== null ? (
             <>
@@ -672,13 +584,13 @@ function ResultsCard({
         <View style={{...section, gap: ms(12)}}>
           <Mono
             style={{
-              fontSize: ms(10),
+              fontSize: fs(9),
               color: T.muted,
               letterSpacing: 1.5,
             }}>
             SHIFT SEGMENTS
           </Mono>
-          <View style={{gap: ms(9)}}>
+          <View style={{gap: ms(6)}}>
             {calc.pairs.map((p, i) => (
               <SegmentRow
                 key={i}
@@ -713,9 +625,9 @@ function ResultsCard({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: ms(16),
+          padding: ms(12),
         }}>
-        <Mono style={{fontSize: ms(11), color: T.muted}}>
+        <Mono style={{fontSize: fs(10), color: T.muted}}>
           Valid entries: {calc.validCount}
         </Mono>
         <Pressable
@@ -723,14 +635,14 @@ function ResultsCard({
           style={({pressed}) => ({
             borderWidth: 1,
             borderColor: T.orangeBorder,
-            borderRadius: ms(6),
-            paddingHorizontal: ms(16),
-            paddingVertical: ms(7),
+            borderRadius: ms(5),
+            paddingHorizontal: ms(12),
+            paddingVertical: ms(6),
             backgroundColor: pressed ? T.orangeDim : 'transparent',
           })}>
           <Mono
             style={{
-              fontSize: ms(11),
+              fontSize: fs(10),
               fontWeight: '700',
               color: T.orange,
               letterSpacing: 1,

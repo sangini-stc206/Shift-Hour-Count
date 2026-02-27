@@ -31,6 +31,14 @@ export function formatHMS(totalSeconds: number): string {
   return `${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+export function parsePastedTimes(text: string): string[] {
+  const normalized = text.replace(/\\n/g, '\n');
+  return normalized
+    .split(/[\n,;]+/)
+    .map(l => l.trim().replace(/^(IN|OUT)\s*[:\-]?\s*/i, ''))
+    .filter(l => l && !/missing/i.test(l));
+}
+
 export function formatClock(totalSecs: number): string {
   const day = 24 * 3600;
   const norm = ((totalSecs % day) + day) % day;

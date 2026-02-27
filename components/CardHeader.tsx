@@ -1,6 +1,6 @@
 import React from 'react';
 import {View} from 'react-native';
-import {ms} from '../constants/spacing';
+import {ms, fs} from '../constants/spacing';
 import {useTheme} from '../theme/ThemeContext';
 import {Mono} from './Mono';
 
@@ -23,15 +23,15 @@ export function CardHeader({label}: CardHeaderProps) {
       }}>
       <View
         style={{
-          width: ms(7),
-          height: ms(7),
-          borderRadius: ms(4),
+          width: ms(6),
+          height: ms(6),
+          borderRadius: ms(3),
           backgroundColor: T.accent,
         }}
       />
       <Mono
         style={{
-          fontSize: ms(10),
+          fontSize: fs(9),
           fontWeight: '700',
           color: T.muted,
           letterSpacing: 1.6,

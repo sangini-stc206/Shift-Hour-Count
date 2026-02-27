@@ -1,6 +1,6 @@
 import React from 'react';
 import {View} from 'react-native';
-import {ms} from '../constants/spacing';
+import {ms, fs} from '../constants/spacing';
 import {Mono} from './Mono';
 
 type ChipProps = {
@@ -17,13 +17,13 @@ export function Chip({label, color, bg, border}: ChipProps) {
         backgroundColor: bg,
         borderColor: border,
         borderWidth: 1,
-        paddingHorizontal: ms(9),
-        paddingVertical: ms(3),
-        borderRadius: ms(4),
+        paddingHorizontal: ms(7),
+        paddingVertical: ms(2),
+        borderRadius: ms(3),
       }}>
       <Mono
         style={{
-          fontSize: ms(9),
+          fontSize: fs(8),
           fontWeight: '700',
           color,
           letterSpacing: 1,

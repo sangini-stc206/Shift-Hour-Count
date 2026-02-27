@@ -1,6 +1,6 @@
 import React from 'react';
 import {View} from 'react-native';
-import {ms} from '../constants/spacing';
+import {ms, fs} from '../constants/spacing';
 import {useTheme} from '../theme/ThemeContext';
 import {Mono} from './Mono';
 import {formatHMS} from '../helpers/dateHelpers';
@@ -30,7 +30,7 @@ export function SegmentRow({
   const span = Math.max(maxT - minT, 1);
   const leftPct = ((inSecs - minT) / span) * 100;
   const widthPct = Math.max(4, ((outSecs - inSecs) / span) * 100);
-  const barHeight = ms(4);
+  const barHeight = ms(3);
   return (
     <View
       style={{
@@ -38,7 +38,7 @@ export function SegmentRow({
         alignItems: 'center',
         gap: ms(8),
       }}>
-      <Mono style={{fontSize: ms(11), color: T.accent, width: ms(85)}}>
+      <Mono style={{fontSize: fs(10), color: T.accent, width: ms(70)}}>
         {inLabel}
       </Mono>
       <View
@@ -63,18 +63,18 @@ export function SegmentRow({
       </View>
       <Mono
         style={{
-          fontSize: ms(11),
+          fontSize: fs(10),
           color: isOpen ? T.muted : T.orange,
-          width: ms(82),
+          width: ms(68),
           textAlign: 'right',
         }}>
         {isOpen ? 'ongoing…' : outLabel}
       </Mono>
       <Mono
         style={{
-          fontSize: ms(11),
+          fontSize: fs(10),
           color: isOpen ? T.accent : T.muted,
-          width: ms(56),
+          width: ms(48),
           textAlign: 'right',
         }}>
         {formatHMS(dur)}

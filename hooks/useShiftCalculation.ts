@@ -2,22 +2,13 @@ import {useMemo} from 'react';
 import {parseTimeToSeconds} from '../helpers/dateHelpers';
 
 export function useShiftCalculation(
-  text: string,
   manualTimes: string[],
-  entryMode: 'paste' | 'manual',
   rejoinGap: number,
 ) {
   return useMemo(() => {
-    const normalizedText = text.replace(/\\n/g, '\n');
-    const lines =
-      entryMode === 'paste'
-        ? normalizedText
-            .split('\n')
-            .map(l => l.trim())
-            .filter(l => l && !/missing/i.test(l))
-        : manualTimes
-            .map(l => l.replace(/\\n/g, '\n').split('\n')[0].trim())
-            .filter(l => l && !/missing/i.test(l));
+    const lines = manualTimes
+      .map(l => l.replace(/\\n/g, '\n').split('\n')[0].trim())
+      .filter(l => l && !/missing/i.test(l));
 
     const valid = lines
       .map(raw => ({raw, secs: parseTimeToSeconds(raw)}))
@@ -72,5 +63,5 @@ export function useShiftCalculation(
       maxT,
       openInSecs,
     };
-  }, [text, manualTimes, entryMode, rejoinGap]);
+  }, [manualTimes, rejoinGap]);
 }

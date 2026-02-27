@@ -1,6 +1,6 @@
 import React from 'react';
 import {View} from 'react-native';
-import {ms} from '../constants/spacing';
+import {ms, fs} from '../constants/spacing';
 import {useTheme} from '../theme/ThemeContext';
 import {Mono} from './Mono';
 
@@ -13,10 +13,10 @@ type StatBoxProps = {
 export function StatBox({label, value, color}: StatBoxProps) {
   const T = useTheme();
   return (
-    <View style={{minWidth: '44%', flex: 1, gap: ms(4)}}>
+    <View style={{minWidth: '44%', flex: 1, gap: ms(3)}}>
       <Mono
         style={{
-          fontSize: ms(9),
+          fontSize: fs(8),
           color: T.muted,
           letterSpacing: 1.5,
         }}>
@@ -24,7 +24,7 @@ export function StatBox({label, value, color}: StatBoxProps) {
       </Mono>
       <Mono
         style={{
-          fontSize: ms(17),
+          fontSize: fs(14),
           fontWeight: '700',
           color,
           letterSpacing: 0.2,
